@@ -1,98 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Klick das Quadrat - iPad Version mit Anzeigen</title>
+  <title>Klick das Quadrat - Mit Gegner</title>
   <style>
-    body { 
-      text-align: center; 
-      font-family: Arial; 
-      background-color: lightblue; /* Hintergrundfarbe ändern oder Bild nutzen */
-      /* Beispiel für Hintergrundbild:
-      background-image: url('background.jpg'); 
-      background-size: cover; 
-      background-position: center; 
-      */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: radial-gradient(circle at center, #1a1a2e, #0f0f1b);
+      color: white;
+      overflow: hidden;
     }
-    #game { width: 400px; height: 400px; border: 2px solid black; margin: 20px auto; position: relative; }
-    #box { width: 50px; height: 50px; background-color: red; position: absolute; cursor: pointer; }
-    p { font-size: 18px; }
+
+    h1 {
+      margin-top: 30px;
+      font-size: 42px;
+      text-shadow: 0 0 20px #00ffff;
+    }
+
+    button {
+      padding: 15px 35px;
+      font-size: 20px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      margin-top: 20px;
+      background: #00ffff;
+      color: black;
+      box-shadow: 0 0 20px #00ffff;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 40px #00ffff;
+    }
+
+    #gameSection {
+      display: none;
+      margin-top: 30px;
+    }
+
+    #game {
+      width: 420px;
+      height: 420px;
+      margin: 20px auto;
+      position: relative;
+      border-radius: 30px;
+      background: #111;
+      box-shadow: 0 0 60px #00ffff;
+      overflow: hidden;
+    }
+
+    #box, #enemy {
+      width: 60px;
+      height: 60px;
+      position: absolute;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    #box {
+      animation: glow 1s infinite alternate;
+    }
+
+    #enemy {
+      background: #ff0000;
+      box-shadow: 0 0 15px #ff0000;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 0 15px #ff00ff; }
+      to { box-shadow: 0 0 35px #00ffff; }
+    }
+
+    .explode {
+      animation: explode 0.3s forwards;
+    }
+
+    @keyframes explode {
+      to { transform: scale(1.5); opacity: 0; }
+    }
+
+    p { font-size: 20px; }
   </style>
 </head>
 <body>
 
-<h1>Klick das Quadrat!</h1>
+<h1>⚡ ULTRA Klick Game ⚡</h1>
+<button onclick="startGame()">Start</button>
 
-<p>Punkte: <span id="score">0</span></p>
-<p id="timer">Zeit: 30</p>
-<p id="highscore">Highscore: 0</p>
+<div id="gameSection">
+  <p>Punkte: <span id="score">0</span></p>
+  <p>Zeit: <span id="timer">30</span></p>
+  <p id="highscore">Highscore: 0</p>
 
-<div id="game">
-  <div id="box"></div>
+  <div id="game">
+    <div id="box"></div>
+    <div id="enemy"></div>
+  </div>
 </div>
 
 <script>
   const box = document.getElementById("box");
+  const enemy = document.getElementById("enemy");
   const scoreDisplay = document.getElementById("score");
   const timerDisplay = document.getElementById("timer");
   const highscoreDisplay = document.getElementById("highscore");
-  let score = 0;
+  const gameSection = document.getElementById("gameSection");
 
-  // Highscore aus localStorage laden
+  let score = 0;
+  let timeLeft = 30;
+  let timer;
   let highscore = localStorage.getItem('highscore') || 0;
   highscoreDisplay.textContent = highscore;
 
-  // Sound vorbereiten
-  const clickSound = new Audio('click.mp3'); // hochladen in dein Repo
-
-  // Zufällige Farbe
-  function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for(let i=0;i<6;i++){ color += letters[Math.floor(Math.random()*16)]; }
-    return color;
+  function randomColor() {
+    return `hsl(${Math.random()*360}, 100%, 60%)`;
   }
 
-  // Score erhöhen + Farbe + Sound + Highscore
-  function increaseScore() {
-    score++;
+  function startGame() {
+    gameSection.style.display = "block";
+    score = 0;
+    timeLeft = 30;
     scoreDisplay.textContent = score;
-    box.style.backgroundColor = getRandomColor();
-    clickSound.play();
+    timerDisplay.textContent = timeLeft;
     moveBox();
-    
-    if(score > highscore){
-      highscore = score;
-      localStorage.setItem('highscore', highscore);
-      highscoreDisplay.textContent = highscore;
-    }
-  }
-  box.addEventListener("click", increaseScore);
-  box.addEventListener("touchstart", increaseScore);
+    moveEnemy();
 
-  // Box bewegen und schwieriger machen
+    timer = setInterval(() => {
+      timeLeft--;
+      timerDisplay.textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        alert("Game Over! Deine Punkte: " + score);
+        gameSection.style.display = "none";
+        if(score > highscore){
+          highscore = score;
+          localStorage.setItem('highscore', highscore);
+          highscoreDisplay.textContent = highscore;
+        }
+      }
+    }, 1000);
+  }
+
   function moveBox() {
-    const size = Math.max(20, 50 - score);
-    box.style.width = size + "px";
-    box.style.height = size + "px";
-    const x = Math.random() * (350 - size);
-    const y = Math.random() * (350 - size);
+    box.classList.remove("explode");
+    box.style.opacity = 1;
+    box.style.transform = "scale(1)";
+    box.style.background = randomColor();
+    const x = Math.random() * 360;
+    const y = Math.random() * 360;
     box.style.left = x + "px";
     box.style.top = y + "px";
   }
-  moveBox();
 
-  // Zeitlimit
-  let timeLeft = 30;
-  const timer = setInterval(() => {
-    timeLeft--;
-    timerDisplay.textContent = `Zeit: ${timeLeft}`;
-    if(timeLeft <= 0){
-      clearInterval(timer);
-      alert(`Game Over! Deine Punkte: ${score}`);
-      box.remove();
-    }
-  }, 1000);
+  function moveEnemy() {
+    const x = Math.random() * 360;
+    const y = Math.random() * 360;
+    enemy.style.left = x + "px";
+    enemy.style.top = y + "px";
+    setTimeout(moveEnemy, 1000); // Gegner bewegt sich jede Sekunde
+  }
+
+  function hitBox() {
+    score++;
+    scoreDisplay.textContent = score;
+    box.classList.add("explode");
+    setTimeout(moveBox, 200);
+  }
+
+  function hitEnemy() {
+    score = Math.max(0, score - 1); // Punktverlust
+    scoreDisplay.textContent = score;
+  }
+
+  box.addEventListener("click", hitBox);
+  box.addEventListener("touchstart", hitBox);
+  enemy.addEventListener("click", hitEnemy);
+  enemy.addEventListener("touchstart", hitEnemy);
+
 </script>
-
 </body>
 </html>
